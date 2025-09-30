@@ -13,7 +13,6 @@ export const HeroSection = () => {
 
   return (
     <section id="home" className="relative min-h-screen bg-gray-200 overflow-hidden">
-      {/* Background Woman Image - positioned exactly like original */}
       <div className="absolute right-0 top-0 w-1/2 h-full z-10">
         <img 
           src={backgroundWoman} 
