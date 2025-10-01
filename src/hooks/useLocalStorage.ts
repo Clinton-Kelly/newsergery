@@ -72,6 +72,12 @@ export interface Prescription {
   created_at: string;
 }
 
+// User account interface
+interface UserAccount {
+  username: string;
+  password: string;
+}
+
 // Authentication
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -84,16 +90,42 @@ export function useAuth() {
     setCurrentUser(user);
   }, []);
 
+  const signup = (username: string, password: string) => {
+    // Get existing accounts
+    const accountsJson = localStorage.getItem('cvms_accounts');
+    const accounts: UserAccount[] = accountsJson ? JSON.parse(accountsJson) : [];
+    
+    // Check if username already exists
+    if (accounts.some(acc => acc.username === username)) {
+      return { success: false, error: 'Username already exists' };
+    }
+    
+    // Create new account
+    accounts.push({ username, password });
+    localStorage.setItem('cvms_accounts', JSON.stringify(accounts));
+    
+    return { success: true };
+  };
+
   const login = (username: string, password: string) => {
-    // Simple demo authentication
-    if (username && password) {
+    // Get existing accounts
+    const accountsJson = localStorage.getItem('cvms_accounts');
+    const accounts: UserAccount[] = accountsJson ? JSON.parse(accountsJson) : [];
+    
+    // Find matching account
+    const account = accounts.find(
+      acc => acc.username === username && acc.password === password
+    );
+    
+    if (account) {
       localStorage.setItem('cvms_auth', 'true');
       localStorage.setItem('cvms_user', username);
       setIsAuthenticated(true);
       setCurrentUser(username);
-      return true;
+      return { success: true };
     }
-    return false;
+    
+    return { success: false, error: 'Invalid username or password' };
   };
 
   const logout = () => {
@@ -103,7 +135,7 @@ export function useAuth() {
     setCurrentUser(null);
   };
 
-  return { isAuthenticated, currentUser, login, logout };
+  return { isAuthenticated, currentUser, login, logout, signup };
 }
 
 // Patients

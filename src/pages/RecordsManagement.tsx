@@ -7,6 +7,7 @@ import { Database, Search, Users, FileText, Calendar, Download, Activity, Trendi
 import { usePatients } from "@/hooks/usePatients";
 import { useProcedures } from "@/hooks/useProcedures";
 import PatientList from "@/components/PatientList";
+import ExportData from "@/components/ExportData";
 
 export default function RecordsManagement() {
   const { patients } = usePatients();
@@ -83,6 +84,8 @@ export default function RecordsManagement() {
           </CardContent>
         </Card>
       </div>
+
+      <ExportData />
 
       <PatientList />
     </div>

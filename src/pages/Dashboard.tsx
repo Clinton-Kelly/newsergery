@@ -122,10 +122,10 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-foreground">Cardiovascular Patient Management</h1>
-          <p className="text-muted-foreground">
-            Welcome back, Dr. Johnson. Here's what's happening in your cardiovascular department today.
-          </p>
+        <h1 className="text-3xl font-bold text-foreground font-heading">Hospital Patient Care System</h1>
+        <p className="text-muted-foreground">
+          Complete patient management from registration to discharge and follow-up
+        </p>
         </div>
 
       {/* Stats Grid */}

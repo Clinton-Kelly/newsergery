@@ -2,48 +2,52 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Stethoscope, 
-  Calendar as CalendarIcon, 
-  Clock, 
   User, 
   FileText, 
-  AlertTriangle,
-  CheckCircle,
-  Eye,
-  Edit
+  CheckCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useLocalPatients, useLocalAnalysis, useLocalVitalData } from "@/hooks/useLocalStorage";
 
 export default function DoctorAnalysis() {
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [activeTab, setActiveTab] = useState("pending");
+  const [patients, setPatients] = useState<any[]>([]);
+  const [analyses, setAnalyses] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [analysisData, setAnalysisData] = useState({
+    symptoms: "",
     diagnosis: "",
-    recommended_surgery: "",
-    surgery_urgency: "",
-    clinical_notes: ""
+    clinicalNotes: "",
+    recommendSurgery: false,
+    surgeryType: "",
+    surgeryUrgency: "",
+    requireLabTests: false,
+    labTestsNeeded: ""
   });
   const { toast } = useToast();
-  const { patients } = useLocalPatients();
-  const { analyses, addAnalysis, getAnalysesByPatient } = useLocalAnalysis();
-  const { getVitalDataByPatient } = useLocalVitalData();
 
-  const getPatientsWithoutAnalysis = () => {
-    return patients.filter(patient => {
-      const patientAnalyses = getAnalysesByPatient(patient.id);
-      return patientAnalyses.length === 0;
-    });
+  useEffect(() => {
+    loadPatients();
+    loadAnalyses();
+  }, []);
+
+  const loadPatients = () => {
+    const stored = localStorage.getItem('cvms_patients') || localStorage.getItem('cardiovascular-patients') || localStorage.getItem('patients');
+    if (stored) {
+      setPatients(JSON.parse(stored));
+    }
+  };
+
+  const loadAnalyses = () => {
+    const stored = localStorage.getItem('cvms_analyses') || localStorage.getItem('cardiovascular-analyses');
+    if (stored) {
+      setAnalyses(JSON.parse(stored));
+    }
   };
 
   const getPatientAge = (dateOfBirth: string) => {
@@ -57,55 +61,125 @@ export default function DoctorAnalysis() {
     return age;
   };
 
-  const handleAnalysisSubmit = async (patientId: string) => {
-    if (!analysisData.diagnosis) {
+  const getVitalDataByPatient = (patientId: string) => {
+    const vitals = JSON.parse(localStorage.getItem('cvms_vital_data') || localStorage.getItem('cardiovascular-vitals') || '[]');
+    return vitals.filter((v: any) => v.patient_id === patientId || v.patientId === patientId);
+  };
+
+  const handleAnalysisSubmit = async () => {
+    if (!selectedPatientId) {
       toast({
         title: "Error",
-        description: "Please enter a diagnosis",
+        description: "Please select a patient",
         variant: "destructive",
       });
       return;
     }
 
-    try {
-      await addAnalysis({
-        patient_id: patientId,
-        doctor_id: 'Dr. Admin',
-        diagnosis: analysisData.diagnosis,
-        recommended_surgery: analysisData.recommended_surgery,
-        surgery_urgency: analysisData.surgery_urgency,
-        clinical_notes: analysisData.clinical_notes,
-        status: 'completed'
+    if (!analysisData.symptoms || !analysisData.diagnosis) {
+      toast({
+        title: "Error",
+        description: "Please enter symptoms and diagnosis",
+        variant: "destructive",
       });
+      return;
+    }
+
+    const selectedPatient = patients.find(p => p.id === selectedPatientId);
+
+    try {
+      const newAnalysis = {
+        id: Date.now().toString(),
+        patient_id: selectedPatientId,
+        patient_name: `${selectedPatient?.first_name} ${selectedPatient?.last_name}`,
+        doctor_id: 'Dr. Admin',
+        symptoms: analysisData.symptoms,
+        diagnosis: analysisData.diagnosis,
+        clinical_notes: analysisData.clinicalNotes,
+        recommend_surgery: analysisData.recommendSurgery,
+        surgery_type: analysisData.surgeryType,
+        surgery_urgency: analysisData.surgeryUrgency,
+        require_lab_tests: analysisData.requireLabTests,
+        lab_tests_needed: analysisData.labTestsNeeded,
+        status: 'completed',
+        created_at: new Date().toISOString()
+      };
+
+      const updatedAnalyses = [newAnalysis, ...analyses];
+      setAnalyses(updatedAnalyses);
+      localStorage.setItem('cvms_analyses', JSON.stringify(updatedAnalyses));
+      localStorage.setItem('cardiovascular-analyses', JSON.stringify(updatedAnalyses)); // Keep for backward compatibility
 
       // If surgery is recommended, add to surgery scheduling
-      if (analysisData.recommended_surgery && analysisData.surgery_urgency) {
+      if (analysisData.recommendSurgery && analysisData.surgeryType) {
         const surgeryData = {
           id: Date.now().toString(),
-          patient_id: patientId,
-          procedure_name: analysisData.recommended_surgery,
-          urgency: analysisData.surgery_urgency,
+          patient_id: selectedPatientId,
+          patient_name: `${selectedPatient?.first_name} ${selectedPatient?.last_name}`,
+          procedure_name: analysisData.surgeryType,
+          urgency: analysisData.surgeryUrgency,
           recommended_by: 'Dr. Admin',
-          status: 'scheduled',
-          created_at: new Date().toISOString()
+          status: 'consent_pending',
+          created_at: new Date().toISOString(),
+          diagnosis: analysisData.diagnosis
         };
         
-        const existingSurgeries = JSON.parse(localStorage.getItem('cardiovascular-surgeries') || '[]');
-        localStorage.setItem('cardiovascular-surgeries', JSON.stringify([surgeryData, ...existingSurgeries]));
+        const existingSurgeries = JSON.parse(localStorage.getItem('cvms_surgeries') || localStorage.getItem('cardiovascular-surgeries') || '[]');
+        localStorage.setItem('cvms_surgeries', JSON.stringify([surgeryData, ...existingSurgeries]));
+        localStorage.setItem('cardiovascular-surgeries', JSON.stringify([surgeryData, ...existingSurgeries])); // Keep for backward compatibility
       }
 
+      // If lab tests are required, create lab test orders
+      if (analysisData.requireLabTests && analysisData.labTestsNeeded) {
+        const testNames = analysisData.labTestsNeeded.split(',').map(t => t.trim()).filter(t => t);
+        const existingTests = JSON.parse(localStorage.getItem('cvms_lab_tests') || '[]');
+        
+        testNames.forEach(testName => {
+          const labTest = {
+            id: `test_${Date.now()}_${Math.random()}`,
+            patient_id: selectedPatientId,
+            patient_name: `${selectedPatient?.first_name} ${selectedPatient?.last_name}`,
+            test_type: 'blood',
+            test_name: testName,
+            ordered_by: 'Dr. Admin',
+            ordered_date: new Date().toISOString(),
+            status: 'ordered',
+            priority: 'routine',
+            notes: `Ordered from doctor analysis - ${analysisData.diagnosis}`,
+            created_at: new Date().toISOString()
+          };
+          existingTests.push(labTest);
+        });
+        
+        localStorage.setItem('cvms_lab_tests', JSON.stringify(existingTests));
+      }
+
+      let description = "Medical assessment completed successfully";
+      if (analysisData.recommendSurgery && analysisData.requireLabTests) {
+        description = "Analysis saved, patient added to surgery consent, and lab tests ordered";
+      } else if (analysisData.recommendSurgery) {
+        description = "Analysis saved and patient added to surgery consent";
+      } else if (analysisData.requireLabTests) {
+        description = "Analysis saved and lab tests ordered";
+      }
+      
       toast({
-        title: "Analysis completed",
-        description: "Medical assessment has been saved successfully.",
+        title: "Analysis Completed",
+        description: description,
       });
 
       // Reset form
       setAnalysisData({
+        symptoms: "",
         diagnosis: "",
-        recommended_surgery: "",
-        surgery_urgency: "",
-        clinical_notes: ""
+        clinicalNotes: "",
+        recommendSurgery: false,
+        surgeryType: "",
+        surgeryUrgency: "",
+        requireLabTests: false,
+        labTestsNeeded: ""
       });
+      setSelectedPatientId("");
     } catch (error) {
       toast({
         title: "Error",
@@ -115,389 +189,325 @@ export default function DoctorAnalysis() {
     }
   };
 
-  const handleScheduleSurgery = (patientId: string) => {
-    toast({
-      title: "Surgery scheduled",
-      description: `Surgery has been scheduled for patient ${patientId}.`,
-    });
-  };
+  const selectedPatient = patients.find(p => p.id === selectedPatientId);
+  const vitalData = selectedPatientId ? getVitalDataByPatient(selectedPatientId) : [];
+  const latestVitals = vitalData[vitalData.length - 1];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground">Doctor Analysis & Scheduling</h1>
+        <h1 className="text-3xl font-bold text-foreground">Doctor Analysis</h1>
         <p className="text-muted-foreground">
-          Medical assessment, diagnosis, and surgery scheduling
+          Medical assessment, diagnosis, and treatment planning
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="pending">
-            Pending Analysis ({getPatientsWithoutAnalysis().length})
-          </TabsTrigger>
-          <TabsTrigger value="schedule">Surgery Scheduling</TabsTrigger>
-          <TabsTrigger value="completed">Completed Assessments</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pending" className="space-y-6">
-          <div className="grid gap-6">
-            {getPatientsWithoutAnalysis().map((patient) => {
-              const vitalData = getVitalDataByPatient(patient.id);
-              const latestVitals = vitalData[vitalData.length - 1];
-              
-              return (
-                <Card key={patient.id} className="bg-gradient-card shadow-card">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-medical rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-xl">{patient.first_name} {patient.last_name}</CardTitle>
-                          <CardDescription>
-                            Age: {getPatientAge(patient.date_of_birth)} • Patient ID: {patient.patient_id}
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <Badge variant="secondary">
-                        Pending Analysis
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Patient Information */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Stethoscope className="w-4 h-4 text-primary" />
-                        <h3 className="font-semibold">Medical Information</h3>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div>
-                          <Label className="text-sm font-medium text-muted-foreground">
-                            Medical History
-                          </Label>
-                          <p className="text-foreground">{patient.medical_history || 'None recorded'}</p>
-                        </div>
-                        
-                        <div>
-                          <Label className="text-sm font-medium text-muted-foreground">
-                            Allergies
-                          </Label>
-                          <p className="text-foreground">{patient.allergies || 'None recorded'}</p>
-                        </div>
-                        
-                        <div>
-                          <Label className="text-sm font-medium text-muted-foreground">
-                            Latest Vital Signs
-                          </Label>
-                          <p className="text-foreground">
-                            {latestVitals ? 
-                              `BP: ${latestVitals.blood_pressure_systolic}/${latestVitals.blood_pressure_diastolic}, HR: ${latestVitals.heart_rate}, Temp: ${latestVitals.temperature}°F` :
-                              'No vital signs recorded'
-                            }
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Analysis Form */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <FileText className="w-4 h-4 text-primary" />
-                        <h3 className="font-semibold">Medical Analysis</h3>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`diagnosis-${patient.id}`}>Diagnosis *</Label>
-                          <Input 
-                            id={`diagnosis-${patient.id}`}
-                            placeholder="Enter primary diagnosis"
-                            value={analysisData.diagnosis}
-                            onChange={(e) => setAnalysisData(prev => ({
-                              ...prev,
-                              diagnosis: e.target.value
-                            }))}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`surgery-type-${patient.id}`}>Recommended Surgery</Label>
-                          <Select value={analysisData.recommended_surgery} onValueChange={(value) => setAnalysisData(prev => ({
-                            ...prev,
-                            recommended_surgery: value
-                          }))}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select surgery type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="cardiac-bypass">Cardiac Bypass</SelectItem>
-                              <SelectItem value="valve-replacement">Valve Replacement</SelectItem>
-                              <SelectItem value="angioplasty">Angioplasty</SelectItem>
-                              <SelectItem value="pacemaker">Pacemaker Installation</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`urgency-${patient.id}`}>Surgery Urgency</Label>
-                          <Select value={analysisData.surgery_urgency} onValueChange={(value) => setAnalysisData(prev => ({
-                            ...prev,
-                            surgery_urgency: value
-                          }))}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select urgency level" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="emergency">Emergency (0-6 hours)</SelectItem>
-                              <SelectItem value="urgent">Urgent (24-48 hours)</SelectItem>
-                              <SelectItem value="routine">Routine (1-2 weeks)</SelectItem>
-                              <SelectItem value="elective">Elective (1+ months)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`notes-${patient.id}`}>Clinical Notes</Label>
-                          <Textarea 
-                            id={`notes-${patient.id}`}
-                            placeholder="Additional observations, recommendations..."
-                            className="h-20"
-                            value={analysisData.clinical_notes}
-                            onChange={(e) => setAnalysisData(prev => ({
-                              ...prev,
-                              clinical_notes: e.target.value
-                            }))}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4 border-t">
-                    <Button 
-                      className="bg-gradient-medical text-white"
-                      onClick={() => handleAnalysisSubmit(patient.id)}
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Complete Analysis
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleScheduleSurgery(patient.id)}
-                    >
-                      <CalendarIcon className="w-4 h-4 mr-2" />
-                      Schedule Surgery
-                    </Button>
-                    <Button variant="ghost">
-                      <Eye className="w-4 h-4 mr-2" />
-                      View History
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )})}
-            {getPatientsWithoutAnalysis().length === 0 && (
-              <div className="text-center text-muted-foreground py-8">
-                No patients pending analysis
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="schedule" className="space-y-6">
-          <Card className="bg-gradient-card shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5 text-primary" />
-                Surgery Scheduling
-              </CardTitle>
-              <CardDescription>
-                Schedule surgical procedures for analyzed patients
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Patient</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select patient for surgery" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="P001">John Doe - Appendectomy</SelectItem>
-                        <SelectItem value="P002">Jane Smith - Cholecystectomy</SelectItem>
-                        <SelectItem value="P003">Mike Wilson - Hernia Repair</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Surgeon</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Assign surgeon" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="dr-smith">Dr. Smith</SelectItem>
-                        <SelectItem value="dr-johnson">Dr. Johnson</SelectItem>
-                        <SelectItem value="dr-brown">Dr. Brown</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Operating Room</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select OR" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="or1">OR 1 - General Surgery</SelectItem>
-                        <SelectItem value="or2">OR 2 - Minimally Invasive</SelectItem>
-                        <SelectItem value="or3">OR 3 - Emergency</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Surgery Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate ? format(selectedDate, "PPP") : "Select date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Start Time</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="08:00">08:00 AM</SelectItem>
-                        <SelectItem value="10:00">10:00 AM</SelectItem>
-                        <SelectItem value="12:00">12:00 PM</SelectItem>
-                        <SelectItem value="14:00">02:00 PM</SelectItem>
-                        <SelectItem value="16:00">04:00 PM</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Estimated Duration</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select duration" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="30">30 minutes</SelectItem>
-                        <SelectItem value="60">1 hour</SelectItem>
-                        <SelectItem value="90">1.5 hours</SelectItem>
-                        <SelectItem value="120">2 hours</SelectItem>
-                        <SelectItem value="180">3 hours</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Patient Selection */}
+        <Card className="lg:col-span-1 bg-gradient-card shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5 text-primary" />
+              Select Patient
+            </CardTitle>
+            <CardDescription>
+              Choose patient for analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Special Instructions</Label>
+                <Label htmlFor="patient">Patient</Label>
+                <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose patient..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patients.map((patient) => (
+                      <SelectItem key={patient.id} value={patient.id}>
+                        {patient.first_name} {patient.last_name} - {patient.patient_id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedPatient && (
+                <div className="space-y-3 pt-4 border-t">
+                  <h3 className="font-semibold text-sm">Patient Information</h3>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Age:</span>{" "}
+                      <span className="font-medium">{getPatientAge(selectedPatient.date_of_birth)} years</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Gender:</span>{" "}
+                      <span className="font-medium capitalize">{selectedPatient.gender || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Medical History:</span>{" "}
+                      <p className="text-foreground mt-1">{selectedPatient.medical_history || 'None recorded'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Allergies:</span>{" "}
+                      <p className="text-foreground mt-1">{selectedPatient.allergies || 'None recorded'}</p>
+                    </div>
+                    {latestVitals && (
+                      <div className="pt-2 border-t">
+                        <span className="text-muted-foreground">Latest Vitals:</span>
+                        <div className="mt-1 grid grid-cols-2 gap-1 text-xs">
+                          <div>BP: {latestVitals.bloodPressureSystolic}/{latestVitals.bloodPressureDiastolic}</div>
+                          <div>HR: {latestVitals.heartRate} BPM</div>
+                          <div>Temp: {latestVitals.temperature}°C</div>
+                          <div>O2: {latestVitals.oxygenSaturation}%</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Analysis Form */}
+        <Card className="lg:col-span-2 bg-gradient-card shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Stethoscope className="w-5 h-5 text-primary" />
+              Medical Analysis
+            </CardTitle>
+            <CardDescription>
+              Record symptoms, diagnosis, and treatment plan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="symptoms">Symptoms *</Label>
                 <Textarea 
-                  placeholder="Any special requirements or instructions for the surgery..."
-                  className="h-20"
+                  id="symptoms"
+                  placeholder="Record all patient symptoms: chest pain, shortness of breath, fatigue, palpitations, etc."
+                  value={analysisData.symptoms}
+                  onChange={(e) => setAnalysisData(prev => ({ ...prev, symptoms: e.target.value }))}
+                  rows={4}
+                  className="resize-none"
                 />
               </div>
 
-              <div className="flex gap-3">
-                <Button className="bg-gradient-medical text-white">
-                  <CalendarIcon className="w-4 h-4 mr-2" />
-                  Schedule Surgery
+              <div className="space-y-2">
+                <Label htmlFor="diagnosis">Diagnosis *</Label>
+                <Input 
+                  id="diagnosis"
+                  placeholder="Enter primary diagnosis"
+                  value={analysisData.diagnosis}
+                  onChange={(e) => setAnalysisData(prev => ({ ...prev, diagnosis: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="clinicalNotes">Clinical Notes</Label>
+                <Textarea 
+                  id="clinicalNotes"
+                  placeholder="Additional observations, test results, recommendations..."
+                  value={analysisData.clinicalNotes}
+                  onChange={(e) => setAnalysisData(prev => ({ ...prev, clinicalNotes: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+
+              <div className="border-t pt-4 space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="recommendSurgery"
+                    checked={analysisData.recommendSurgery}
+                    onCheckedChange={(checked) => setAnalysisData(prev => ({ 
+                      ...prev, 
+                      recommendSurgery: checked as boolean,
+                      surgeryType: checked ? prev.surgeryType : "",
+                      surgeryUrgency: checked ? prev.surgeryUrgency : ""
+                    }))}
+                  />
+                  <Label htmlFor="recommendSurgery" className="font-medium cursor-pointer">
+                    Recommend Surgery
+                  </Label>
+                </div>
+
+                {analysisData.recommendSurgery && (
+                  <div className="pl-6 space-y-4 animate-in fade-in duration-200">
+                    <div className="space-y-2">
+                      <Label htmlFor="surgeryType">Surgery Type *</Label>
+                      <Select 
+                        value={analysisData.surgeryType} 
+                        onValueChange={(value) => setAnalysisData(prev => ({ ...prev, surgeryType: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select surgery type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Coronary Artery Bypass Grafting (CABG)">Coronary Artery Bypass Grafting (CABG)</SelectItem>
+                          <SelectItem value="Heart Valve Replacement">Heart Valve Replacement</SelectItem>
+                          <SelectItem value="Angioplasty & Stent Placement">Angioplasty & Stent Placement</SelectItem>
+                          <SelectItem value="Pacemaker Installation">Pacemaker Installation</SelectItem>
+                          <SelectItem value="Cardiac Ablation">Cardiac Ablation</SelectItem>
+                          <SelectItem value="Heart Transplant">Heart Transplant</SelectItem>
+                          <SelectItem value="Other Cardiac Surgery">Other Cardiac Surgery</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="surgeryUrgency">Surgery Urgency *</Label>
+                      <Select 
+                        value={analysisData.surgeryUrgency} 
+                        onValueChange={(value) => setAnalysisData(prev => ({ ...prev, surgeryUrgency: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select urgency level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="emergency">Emergency (0-6 hours)</SelectItem>
+                          <SelectItem value="urgent">Urgent (24-48 hours)</SelectItem>
+                          <SelectItem value="routine">Routine (1-2 weeks)</SelectItem>
+                          <SelectItem value="elective">Elective (1+ months)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox 
+                    id="requireLabTests"
+                    checked={analysisData.requireLabTests}
+                    onCheckedChange={(checked) => setAnalysisData(prev => ({ 
+                      ...prev, 
+                      requireLabTests: checked as boolean,
+                      labTestsNeeded: checked ? prev.labTestsNeeded : ""
+                    }))}
+                  />
+                  <Label htmlFor="requireLabTests" className="font-medium cursor-pointer">
+                    Require Lab Tests
+                  </Label>
+                </div>
+
+                {analysisData.requireLabTests && (
+                  <div className="pl-6 space-y-2 animate-in fade-in duration-200">
+                    <Label htmlFor="labTestsNeeded">Tests Needed *</Label>
+                    <Textarea 
+                      id="labTestsNeeded"
+                      placeholder="Enter lab tests needed (comma separated): ECG, Blood Test, CT Scan, etc."
+                      value={analysisData.labTestsNeeded}
+                      onChange={(e) => setAnalysisData(prev => ({ ...prev, labTestsNeeded: e.target.value }))}
+                      rows={2}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  className="bg-gradient-medical text-white"
+                  onClick={handleAnalysisSubmit}
+                  disabled={!selectedPatientId}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Complete Analysis
                 </Button>
-                <Button variant="outline">
-                  Check Availability
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setAnalysisData({
+                      symptoms: "",
+                      diagnosis: "",
+                      clinicalNotes: "",
+                      recommendSurgery: false,
+                      surgeryType: "",
+                      surgeryUrgency: "",
+                      requireLabTests: false,
+                      labTestsNeeded: ""
+                    });
+                    setSelectedPatientId("");
+                  }}
+                >
+                  Clear Form
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="completed" className="space-y-6">
-          <Card className="bg-gradient-card shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-success" />
-                Completed Assessments
-              </CardTitle>
-              <CardDescription>
-                Recently completed medical analyses and scheduled surgeries
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {analyses.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  No completed assessments to display
-                </div>
-              ) : (
-                analyses.map((analysis) => {
-                  const patient = patients.find(p => p.id === analysis.patient_id);
-                  return (
-                    <div key={analysis.id} className="p-4 bg-background rounded-lg border">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-medium text-foreground">
-                            {patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown Patient'}
-                          </h4>
-                          <p className="text-sm text-muted-foreground">
-                            Analysis by: {analysis.doctor_id} • {new Date(analysis.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Badge variant="default">Completed</Badge>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div><span className="font-medium">Diagnosis:</span> {analysis.diagnosis}</div>
-                        {analysis.recommended_surgery && (
-                          <div><span className="font-medium">Recommended Surgery:</span> {analysis.recommended_surgery}</div>
-                        )}
-                        {analysis.surgery_urgency && (
-                          <div><span className="font-medium">Urgency:</span> {analysis.surgery_urgency}</div>
-                        )}
-                        {analysis.clinical_notes && (
-                          <div><span className="font-medium">Notes:</span> {analysis.clinical_notes}</div>
-                        )}
-                      </div>
+      {/* Recent Analyses */}
+      <Card className="bg-gradient-card shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            Recent Medical Analyses
+          </CardTitle>
+          <CardDescription>
+            Recently completed patient assessments
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {analyses.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                No analyses recorded yet
+              </div>
+            ) : (
+              analyses.map((analysis) => (
+                <div key={analysis.id} className="p-4 bg-background rounded-lg border">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-medium text-foreground">
+                        {analysis.patient_name}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Analyzed by: {analysis.doctor_id} • {new Date(analysis.created_at).toLocaleDateString()}
+                      </p>
                     </div>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    {analysis.recommend_surgery && (
+                      <Badge variant="destructive">Surgery Recommended</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Symptoms:</span> {analysis.symptoms}
+                    </div>
+                    <div>
+                      <span className="font-medium">Diagnosis:</span> {analysis.diagnosis}
+                    </div>
+                    {analysis.clinical_notes && (
+                      <div>
+                        <span className="font-medium">Clinical Notes:</span> {analysis.clinical_notes}
+                      </div>
+                    )}
+                    {analysis.recommend_surgery && (
+                      <>
+                        <div>
+                          <span className="font-medium">Surgery Type:</span> {analysis.surgery_type}
+                        </div>
+                        <div>
+                          <span className="font-medium">Urgency:</span>{" "}
+                          <Badge variant="outline" className="ml-1">
+                            {analysis.surgery_urgency}
+                          </Badge>
+                        </div>
+                      </>
+                    )}
+                    {analysis.require_lab_tests && (
+                      <div>
+                        <span className="font-medium">Lab Tests Required:</span> {analysis.lab_tests_needed}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

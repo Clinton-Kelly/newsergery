@@ -68,22 +68,57 @@ export default function Prescriptions() {
   }, []);
 
   const loadPrescriptions = () => {
-    const stored = localStorage.getItem('cardiovascular-prescriptions');
-    if (stored) {
-      setPrescriptions(JSON.parse(stored));
+    try {
+      const stored = localStorage.getItem('cvms_prescriptions');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Filter out pharmacy prescriptions and only get the main prescriptions
+        const mainPrescriptions = parsed.filter((p: any) => 
+          p.medications && Array.isArray(p.medications)
+        );
+        setPrescriptions(mainPrescriptions || []);
+      } else {
+        setPrescriptions([]);
+      }
+    } catch (error) {
+      console.error('Error loading prescriptions:', error);
+      setPrescriptions([]);
     }
   };
 
   const loadPatients = () => {
-    const stored = localStorage.getItem('cardiovascular-patients');
-    if (stored) {
-      setPatients(JSON.parse(stored));
+    try {
+      const stored = localStorage.getItem('cvms_patients') || localStorage.getItem('cardiovascular-patients') || localStorage.getItem('patients');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setPatients(Array.isArray(parsed) ? parsed : []);
+      } else {
+        setPatients([]);
+      }
+    } catch (error) {
+      console.error('Error loading patients:', error);
+      setPatients([]);
     }
   };
 
   const loadPatientAnalysis = (patientId: string) => {
-    const analyses = JSON.parse(localStorage.getItem('cardiovascular-analyses') || '[]');
-    return analyses.find((analysis: any) => analysis.patient_id === patientId);
+    try {
+      const analyses = JSON.parse(localStorage.getItem('cvms_analyses') || localStorage.getItem('cardiovascular-analyses') || '[]');
+      return analyses.find((analysis: any) => analysis.patient_id === patientId);
+    } catch (error) {
+      console.error('Error loading patient analysis:', error);
+      return null;
+    }
+  };
+
+  const getPatientsWithAnalysis = () => {
+    try {
+      const analyses = JSON.parse(localStorage.getItem('cvms_analyses') || localStorage.getItem('cardiovascular-analyses') || '[]');
+      return new Set(analyses.map((a: any) => a.patient_id));
+    } catch (error) {
+      console.error('Error getting patients with analysis:', error);
+      return new Set();
+    }
   };
 
   const addMedication = () => {
@@ -147,9 +182,37 @@ export default function Prescriptions() {
       pharmacy: formData.pharmacy
     };
 
-    const updatedPrescriptions = [newPrescription, ...prescriptions];
+    const updatedPrescriptions = [newPrescription, ...(prescriptions || [])];
     setPrescriptions(updatedPrescriptions);
-    localStorage.setItem('cardiovascular-prescriptions', JSON.stringify(updatedPrescriptions));
+    
+    // Save main prescription
+    localStorage.setItem('cvms_prescriptions', JSON.stringify(updatedPrescriptions));
+    
+    // Also save individual medication prescriptions for pharmacy
+    try {
+      const existingPharmacyPrescriptions = JSON.parse(localStorage.getItem('cvms_prescriptions') || '[]');
+      const pharmacyPrescriptions = Array.isArray(existingPharmacyPrescriptions) ? [...existingPharmacyPrescriptions] : [];
+      
+      validMedications.forEach(med => {
+        pharmacyPrescriptions.push({
+          id: `rx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          patient_id: formData.patientId,
+          patient_name: `${selectedPatient.first_name} ${selectedPatient.last_name}`,
+          doctor_id: 'current-doctor',
+          medication_name: med.name,
+          dosage: med.dosage,
+          frequency: med.frequency,
+          duration: med.duration,
+          instructions: med.instructions,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        });
+      });
+      
+      localStorage.setItem('cvms_prescriptions', JSON.stringify(pharmacyPrescriptions));
+    } catch (error) {
+      console.error('Error saving pharmacy prescriptions:', error);
+    }
 
     // Reset form
     setFormData({
@@ -169,11 +232,11 @@ export default function Prescriptions() {
   };
 
   const updatePrescriptionStatus = (prescriptionId: string, newStatus: string) => {
-    const updatedPrescriptions = prescriptions.map(p => 
+    const updatedPrescriptions = (prescriptions || []).map(p => 
       p.id === prescriptionId ? { ...p, status: newStatus as any } : p
     );
     setPrescriptions(updatedPrescriptions);
-    localStorage.setItem('cardiovascular-prescriptions', JSON.stringify(updatedPrescriptions));
+    localStorage.setItem('cvms_prescriptions', JSON.stringify(updatedPrescriptions));
 
     toast({
       title: "Status Updated",
@@ -189,6 +252,9 @@ export default function Prescriptions() {
       default: return 'bg-gray-500 text-white';
     }
   };
+
+  // Safe array for mapping
+  const safePrescriptions = Array.isArray(prescriptions) ? prescriptions : [];
 
   return (
     <div className="space-y-6">
@@ -227,11 +293,15 @@ export default function Prescriptions() {
                     <SelectValue placeholder="Choose patient..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {patients.map((patient) => (
-                      <SelectItem key={patient.id} value={patient.id}>
-                        {patient.first_name} {patient.last_name} - {patient.patient_id}
-                      </SelectItem>
-                    ))}
+                    {Array.isArray(patients) && patients.map((patient) => {
+                      const hasAnalysis = getPatientsWithAnalysis().has(patient.id);
+                      return (
+                        <SelectItem key={patient.id} value={patient.id}>
+                          {patient.first_name} {patient.last_name} - {patient.patient_id}
+                          {hasAnalysis && " 💊"}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -383,65 +453,67 @@ export default function Prescriptions() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              {prescriptions.map((prescription) => (
-                <div key={prescription.id} className="p-4 bg-background rounded-lg border">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium">{prescription.patientName}</div>
-                    <Badge className={getStatusBadgeColor(prescription.status)}>
-                      {prescription.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div><strong>Diagnosis:</strong> {prescription.diagnosis}</div>
-                    <div><strong>Doctor:</strong> {prescription.doctorName}</div>
-                    
-                    <div className="space-y-1">
-                      <strong>Medications:</strong>
-                      {prescription.medications.map((med, index) => (
-                        <div key={index} className="ml-4 text-muted-foreground">
-                          • {med.name} - {med.dosage}, {med.frequency}
-                          {med.duration && ` for ${med.duration}`}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {prescription.instructions && (
-                      <div><strong>Instructions:</strong> {prescription.instructions}</div>
-                    )}
-                    
-                    {prescription.followUpDate && (
-                      <div><strong>Follow-up:</strong> {prescription.followUpDate}</div>
-                    )}
-                    
-                    <div className="text-xs text-muted-foreground">
-                      Prescribed: {new Date(prescription.prescribedAt).toLocaleString()}
-                    </div>
-                  </div>
-                  
-                  {prescription.status === 'active' && (
-                    <div className="mt-3 flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => updatePrescriptionStatus(prescription.id, 'completed')}
-                      >
-                        Mark Completed
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updatePrescriptionStatus(prescription.id, 'discontinued')}
-                      >
-                        Discontinue
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {prescriptions.length === 0 && (
+              {safePrescriptions.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
-                  No prescriptions created yet
+                  <Pill className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No prescriptions created yet</p>
                 </div>
+              ) : (
+                safePrescriptions.map((prescription) => (
+                  <div key={prescription.id} className="p-4 bg-background rounded-lg border">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium">{prescription.patientName}</div>
+                      <Badge className={getStatusBadgeColor(prescription.status)}>
+                        {prescription.status.toUpperCase()}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div><strong>Diagnosis:</strong> {prescription.diagnosis}</div>
+                      <div><strong>Doctor:</strong> {prescription.doctorName}</div>
+                      
+                      <div className="space-y-1">
+                        <strong>Medications:</strong>
+                        {prescription.medications.map((med, index) => (
+                          <div key={index} className="ml-4 text-muted-foreground">
+                            • {med.name} - {med.dosage}, {med.frequency}
+                            {med.duration && ` for ${med.duration}`}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {prescription.instructions && (
+                        <div><strong>Instructions:</strong> {prescription.instructions}</div>
+                      )}
+                      
+                      {prescription.followUpDate && (
+                        <div><strong>Follow-up:</strong> {prescription.followUpDate}</div>
+                      )}
+                      
+                      <div className="text-xs text-muted-foreground">
+                        Prescribed: {new Date(prescription.prescribedAt).toLocaleString()}
+                      </div>
+                    </div>
+                    
+                    {prescription.status === 'active' && (
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => updatePrescriptionStatus(prescription.id, 'completed')}
+                        >
+                          Mark Completed
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updatePrescriptionStatus(prescription.id, 'discontinued')}
+                        >
+                          Discontinue
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))
               )}
             </div>
           </CardContent>

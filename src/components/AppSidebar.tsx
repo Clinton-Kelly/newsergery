@@ -14,7 +14,8 @@ import {
   FileCheck,
   UserCheck,
   Clock,
-  MessageCircle
+  MessageCircle,
+  Download
 } from "lucide-react";
 
 import {
@@ -32,33 +33,39 @@ import {
 const navigationItems = [
   {
     title: "Dashboard",
-    url: "/",
+    url: "/dashboard",
     icon: BarChart3,
     description: "Overview & Analytics"
   },
   {
-    title: "Patient Registration",
+    title: "Patient Onboarding",
     url: "/patients",
     icon: Users,
-    description: "Register new cardiac patients"
+    description: "Register new patients"
   },
   {
     title: "Vital Data Collection",
     url: "/vitals",
     icon: Heart,
-    description: "Cardiac vital signs monitoring"
+    description: "Record vital signs"
   },
   {
     title: "Appointment Booking",
     url: "/appointments",
     icon: Calendar,
-    description: "Schedule cardiac consultations"
+    description: "Schedule consultations"
   },
   {
     title: "Doctor Analysis",
     url: "/analysis",
     icon: Stethoscope,
-    description: "Cardiac assessment & diagnosis"
+    description: "Assessment & diagnosis"
+  },
+  {
+    title: "Lab Tests",
+    url: "/lab-tests",
+    icon: Activity,
+    description: "Order & manage tests"
   },
   {
     title: "Prescriptions",
@@ -67,28 +74,52 @@ const navigationItems = [
     description: "Medication management"
   },
   {
-    title: "Surgery Consent",
-    url: "/consent",
-    icon: FileCheck,
-    description: "Cardiac surgery consent forms"
+    title: "Pharmacy",
+    url: "/pharmacy",
+    icon: CheckSquare,
+    description: "Drug dispensing"
   },
   {
-    title: "Surgery Tracking",
-    url: "/surgery",
+    title: "Consent Management",
+    url: "/consent",
+    icon: FileCheck,
+    description: "Surgery consent forms"
+  },
+  {
+    title: "Pre-Operative",
+    url: "/pre-operative",
+    icon: UserCheck,
+    description: "WHO pre-op checklist"
+  },
+  {
+    title: "During Operation",
+    url: "/during-operation",
     icon: Activity,
-    description: "Live cardiac surgery monitoring"
+    description: "Intra-operative monitoring"
+  },
+  {
+    title: "Post-Operative",
+    url: "/post-operative",
+    icon: Clock,
+    description: "Recovery tracking"
   },
   {
     title: "Patient Records",
     url: "/records",
     icon: Database,
-    description: "Complete patient history"
+    description: "Complete history & export"
   },
   {
-    title: "Notifications",
-    url: "/notifications",
+    title: "Follow-up",
+    url: "/followup",
     icon: MessageCircle,
-    description: "Doctor alerts & reminders"
+    description: "Patient follow-up care"
+  },
+  {
+    title: "Data Export",
+    url: "/data-export",
+    icon: Download,
+    description: "Export data for research"
   }
 ];
 
@@ -99,6 +130,9 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   const isActive = (path: string) => {
+    if (path === "/dashboard") {
+      return currentPath === "/dashboard";
+    }
     if (path === "/") {
       return currentPath === "/";
     }
@@ -116,9 +150,12 @@ export function AppSidebar() {
             </div>
             {!isCollapsed && (
             <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">
-                AIAA- NGO Cardiovascular Patient Management System
+              <h1 className="text-lg font-bold text-sidebar-foreground font-heading">
+                Hospital Management
               </h1>
+              <p className="text-xs text-sidebar-foreground/70">
+                Patient Care System
+              </p>
             </div>
             )}
           </div>

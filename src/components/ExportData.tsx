@@ -29,23 +29,32 @@ export default function ExportData() {
     const patient = patients.find(p => p.id === patientId);
     if (!patient) return null;
 
+    // Get all prescriptions (from both old and new format)
+    const allPrescriptions = JSON.parse(localStorage.getItem('cvms_prescriptions') || '[]');
+    const patientPrescriptions = allPrescriptions.filter((p: any) => p.patient_id === patientId);
+
     return {
       patient,
       vitalData: getVitalDataByPatient(patientId),
       appointments: appointments.filter(a => a.patient_id === patientId),
       analyses: getAnalysesByPatient(patientId),
-      prescriptions: getPrescriptionsByPatient(patientId)
+      prescriptions: patientPrescriptions
     };
   };
 
   const generateAllPatientsReport = (): PatientReport[] => {
-    return patients.map(patient => ({
-      patient,
-      vitalData: getVitalDataByPatient(patient.id),
-      appointments: appointments.filter(a => a.patient_id === patient.id),
-      analyses: getAnalysesByPatient(patient.id),
-      prescriptions: getPrescriptionsByPatient(patient.id)
-    }));
+    return patients.map(patient => {
+      const allPrescriptions = JSON.parse(localStorage.getItem('cvms_prescriptions') || '[]');
+      const patientPrescriptions = allPrescriptions.filter((p: any) => p.patient_id === patient.id);
+      
+      return {
+        patient,
+        vitalData: getVitalDataByPatient(patient.id),
+        appointments: appointments.filter(a => a.patient_id === patient.id),
+        analyses: getAnalysesByPatient(patient.id),
+        prescriptions: patientPrescriptions
+      };
+    });
   };
 
   const handleExport = () => {

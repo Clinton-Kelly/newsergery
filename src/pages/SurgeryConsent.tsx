@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export default function ConsentManagement() {
+export default function SurgeryConsent() {
   const [surgeries, setSurgeries] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedSurgery, setSelectedSurgery] = useState<any>(null);
@@ -28,8 +28,7 @@ export default function ConsentManagement() {
     understoodRisks: false,
     understoodBenefits: false,
     understoodAlternatives: false,
-    consentToSurgery: false,
-    signature: ""
+    consentToSurgery: false
   });
   const { toast } = useToast();
 
@@ -65,8 +64,7 @@ export default function ConsentManagement() {
       understoodRisks: false,
       understoodBenefits: false,
       understoodAlternatives: false,
-      consentToSurgery: false,
-      signature: ""
+      consentToSurgery: false
     });
   };
 
@@ -89,15 +87,6 @@ export default function ConsentManagement() {
         toast({
           title: "Error",
           description: "Please provide next of kin information",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!consentData.signature) {
-        toast({
-          title: "Error",
-          description: "Please provide your signature (type your full name)",
           variant: "destructive",
         });
         return;
@@ -315,22 +304,6 @@ export default function ConsentManagement() {
 
                 <Separator />
 
-                {/* Digital Signature */}
-                <div className="space-y-2">
-                  <Label htmlFor="signature">Digital Signature *</Label>
-                  <Input 
-                    id="signature"
-                    value={consentData.signature}
-                    onChange={(e) => setConsentData({...consentData, signature: e.target.value})}
-                    placeholder="Type your full name to sign"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    By typing your name above, you electronically sign this consent form.
-                  </p>
-                </div>
-
-                <Separator />
-
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-3">
                   <Button 
@@ -358,7 +331,7 @@ export default function ConsentManagement() {
 
                 <div className="pt-4 border-t">
                   <p className="text-xs text-muted-foreground">
-                    <strong>Note:</strong> This consent form can be printed for physical records. The digital signature and consent are legally binding.
+                    <strong>Note:</strong> This consent form must be printed, signed by the patient or legal guardian, and filed in the patient's medical record before the surgery can be scheduled.
                   </p>
                 </div>
               </div>

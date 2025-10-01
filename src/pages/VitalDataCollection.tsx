@@ -39,8 +39,7 @@ export default function VitalDataCollection() {
     weight: "",
     height: "",
     oxygenSaturation: "",
-    ecgReading: "",
-    symptoms: ""
+    ecgReading: ""
   });
   const { toast } = useToast();
 
@@ -111,7 +110,7 @@ export default function VitalDataCollection() {
       height: parseFloat(formData.height),
       oxygenSaturation: parseInt(formData.oxygenSaturation),
       ecgReading: formData.ecgReading,
-      symptoms: formData.symptoms,
+      symptoms: "",
       riskLevel,
       timestamp: new Date().toISOString(),
       recordedBy: "Current User"
@@ -130,8 +129,7 @@ export default function VitalDataCollection() {
       weight: "",
       height: "",
       oxygenSaturation: "",
-      ecgReading: "",
-      symptoms: ""
+      ecgReading: ""
     });
     setSelectedPatient("");
 
@@ -288,18 +286,7 @@ export default function VitalDataCollection() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="symptoms">Symptoms & Notes</Label>
-                <Textarea
-                  id="symptoms"
-                  placeholder="Patient reports chest pain, shortness of breath..."
-                  value={formData.symptoms}
-                  onChange={(e) => setFormData({...formData, symptoms: e.target.value})}
-                  rows={3}
-                />
-              </div>
-
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full bg-gradient-medical text-white">
                 Record Vital Data
               </Button>
             </form>
@@ -333,11 +320,6 @@ export default function VitalDataCollection() {
                     <div>Temp: {vital.temperature}°C</div>
                     <div>O2: {vital.oxygenSaturation}%</div>
                   </div>
-                  {vital.symptoms && (
-                    <div className="mt-2 text-sm">
-                      <strong>Symptoms:</strong> {vital.symptoms}
-                    </div>
-                  )}
                   <div className="mt-2 text-xs text-muted-foreground">
                     {new Date(vital.timestamp).toLocaleString()}
                   </div>

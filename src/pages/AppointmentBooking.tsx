@@ -23,6 +23,7 @@ interface Appointment {
   notes?: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   createdAt: string;
+  arrivalStatus?: 'pending' | 'arrived' | 'late' | 'no-show';
 }
 
 const doctors = [
@@ -41,9 +42,7 @@ export default function AppointmentBooking() {
     date: "",
     time: "",
     type: "",
-    reason: "",
-    priority: "",
-    notes: ""
+    priority: ""
   });
   const { toast } = useToast();
 
@@ -70,12 +69,12 @@ export default function AppointmentBooking() {
     e.preventDefault();
     
     const selectedPatient = patients.find(p => p.id === formData.patientId);
-    const selectedDoctor = doctors.find(d => d.id === formData.doctorId);
+    const selectedDoctor = formData.doctorId ? doctors.find(d => d.id === formData.doctorId) : null;
     
-    if (!selectedPatient || !selectedDoctor) {
+    if (!selectedPatient) {
       toast({
         title: "Error",
-        description: "Please select both patient and doctor",
+        description: "Please select a patient",
         variant: "destructive",
       });
       return;
@@ -85,16 +84,17 @@ export default function AppointmentBooking() {
       id: Date.now().toString(),
       patientId: formData.patientId,
       patientName: `${selectedPatient.first_name} ${selectedPatient.last_name}`,
-      doctorId: formData.doctorId,
-      doctorName: selectedDoctor.name,
+      doctorId: formData.doctorId || 'unassigned',
+      doctorName: selectedDoctor?.name || 'Unassigned',
       date: formData.date,
       time: formData.time,
       type: formData.type as any,
       status: 'scheduled',
-      reason: formData.reason,
-      notes: formData.notes,
+      reason: '',
+      notes: '',
       priority: formData.priority as any,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      arrivalStatus: 'pending'
     };
 
     const updatedAppointments = [newAppointment, ...appointments];
@@ -124,9 +124,7 @@ export default function AppointmentBooking() {
       date: "",
       time: "",
       type: "",
-      reason: "",
-      priority: "",
-      notes: ""
+      priority: ""
     });
 
     toast({
@@ -145,6 +143,27 @@ export default function AppointmentBooking() {
     toast({
       title: "Status Updated",
       description: `Appointment status changed to ${newStatus}`,
+    });
+  };
+
+  const updateArrivalStatus = (appointmentId: string, arrivalStatus: 'arrived' | 'late' | 'no-show') => {
+    const updatedAppointments = appointments.map(app => {
+      if (app.id === appointmentId) {
+        // If late, move to end of schedule for that day
+        if (arrivalStatus === 'late') {
+          return { ...app, arrivalStatus, priority: 'low' as any };
+        }
+        return { ...app, arrivalStatus };
+      }
+      return app;
+    });
+    
+    setAppointments(updatedAppointments);
+    localStorage.setItem('cardiovascular-appointments', JSON.stringify(updatedAppointments));
+
+    toast({
+      title: arrivalStatus === 'arrived' ? "Patient Arrived" : arrivalStatus === 'late' ? "Marked as Late" : "Marked as No-Show",
+      description: arrivalStatus === 'late' ? "Patient moved to end of schedule" : undefined,
     });
   };
 
@@ -208,10 +227,10 @@ export default function AppointmentBooking() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="doctor">Select Doctor</Label>
+                <Label htmlFor="doctor">Select Doctor (Optional)</Label>
                 <Select value={formData.doctorId} onValueChange={(value) => setFormData({...formData, doctorId: value})}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose doctor..." />
+                    <SelectValue placeholder="Choose doctor (optional)..." />
                   </SelectTrigger>
                   <SelectContent>
                     {doctors.filter(d => d.available).map((doctor) => (
@@ -277,29 +296,7 @@ export default function AppointmentBooking() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="reason">Reason for Visit</Label>
-                <Input
-                  id="reason"
-                  placeholder="Chest pain, routine checkup, etc."
-                  value={formData.reason}
-                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Additional Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any special instructions or patient concerns..."
-                  value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  rows={3}
-                />
-              </div>
-
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full bg-gradient-medical text-white">
                 Schedule Appointment
               </Button>
             </form>
@@ -336,22 +333,47 @@ export default function AppointmentBooking() {
                     <div><strong>Doctor:</strong> {appointment.doctorName}</div>
                     <div><strong>Date & Time:</strong> {appointment.date} at {appointment.time}</div>
                     <div><strong>Type:</strong> {appointment.type}</div>
-                    <div><strong>Reason:</strong> {appointment.reason}</div>
-                    {appointment.notes && (
-                      <div><strong>Notes:</strong> {appointment.notes}</div>
+                    {appointment.arrivalStatus && appointment.arrivalStatus !== 'pending' && (
+                      <div>
+                        <strong>Arrival Status:</strong> 
+                        <Badge className="ml-2" variant={
+                          appointment.arrivalStatus === 'arrived' ? 'default' : 
+                          appointment.arrivalStatus === 'late' ? 'secondary' : 'destructive'
+                        }>
+                          {appointment.arrivalStatus}
+                        </Badge>
+                      </div>
                     )}
                   </div>
                   {appointment.status === 'scheduled' && (
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        onClick={() => updateAppointmentStatus(appointment.id, 'confirmed')}
+                        onClick={() => updateArrivalStatus(appointment.id, 'arrived')}
+                        variant="default"
                       >
-                        Confirm
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Arrived
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => updateArrivalStatus(appointment.id, 'late')}
+                        variant="secondary"
+                      >
+                        <Clock className="w-3 h-3 mr-1" />
+                        Late
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
+                        onClick={() => updateArrivalStatus(appointment.id, 'no-show')}
+                      >
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        No-Show
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
                         onClick={() => updateAppointmentStatus(appointment.id, 'cancelled')}
                       >
                         Cancel

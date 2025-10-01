@@ -1,411 +1,697 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { 
-  CheckSquare, 
+  ClipboardCheck, 
   User, 
-  Clock, 
+  CheckCircle, 
   AlertTriangle,
-  Shield,
-  FileText,
-  Activity,
-  Heart
+  Save,
+  Eye
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PreOperative() {
-  const [activeTab, setActiveTab] = useState("checklist");
+  const [patients, setPatients] = useState<any[]>([]);
+  const [surgeries, setSurgeries] = useState<any[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState("");
+  const [procedureName, setProcedureName] = useState("");
   const { toast } = useToast();
 
-  const patients = [
-    {
-      id: "P001",
-      name: "John Doe",
-      surgeryType: "Appendectomy",
-      surgeryDate: "2024-01-20",
-      surgeryTime: "09:00 AM",
-      surgeon: "Dr. Smith",
-      checklistProgress: 85,
-      status: "In Progress",
-      whoChecklist: {
-        "Patient Identity": { completed: true, verifiedBy: "Nurse Johnson", time: "08:30" },
-        "Procedure Verification": { completed: true, verifiedBy: "Dr. Smith", time: "08:35" },
-        "Site Marking": { completed: true, verifiedBy: "Dr. Smith", time: "08:40" },
-        "Anesthesia Check": { completed: false, verifiedBy: "", time: "" },
-        "Equipment Check": { completed: false, verifiedBy: "", time: "" },
-        "Team Brief": { completed: false, verifiedBy: "", time: "" }
-      }
-    },
-    {
-      id: "P002",
-      name: "Jane Smith",
-      surgeryType: "Cholecystectomy",
-      surgeryDate: "2024-01-22", 
-      surgeryTime: "02:30 PM",
-      surgeon: "Dr. Johnson",
-      checklistProgress: 60,
-      status: "Pending",
-      whoChecklist: {
-        "Patient Identity": { completed: true, verifiedBy: "Nurse Williams", time: "14:00" },
-        "Procedure Verification": { completed: true, verifiedBy: "Dr. Johnson", time: "14:05" },
-        "Site Marking": { completed: false, verifiedBy: "", time: "" },
-        "Anesthesia Check": { completed: false, verifiedBy: "", time: "" },
-        "Equipment Check": { completed: false, verifiedBy: "", time: "" },
-        "Team Brief": { completed: false, verifiedBy: "", time: "" }
-      }
-    }
-  ];
+  // WHO Pre-operative Checklist Items (REDCap-style structured data)
+  const [checklist, setChecklist] = useState({
+    // Patient Identity Confirmation
+    patientIdentityConfirmed: false,
+    consentSigned: false,
+    sitemarked: false,
+    
+    // Anesthesia Safety Check
+    anesthesiaMachineChecked: false,
+    oxygenAvailable: false,
+    suction: false,
+    
+    // Patient Assessment
+    knownAllergy: "",
+    difficultAirway: "",
+    aspirationRisk: "",
+    bloodLossRisk: "",
+    
+    // Equipment and Implants
+    sterileIndicatorsConfirmed: false,
+    equipmentIssues: "",
+    implantAvailable: "",
+    
+    // Additional Information
+    antibioticProphylaxis: "",
+    imagingDisplayed: "",
+    criticalSteps: "",
+    anticipatedDuration: "",
+    
+    // Team Member Confirmation
+    nurseConfirmed: false,
+    anesthetistConfirmed: false,
+    surgeonConfirmed: false,
+    
+    // Additional Notes
+    additionalConcerns: "",
+    
+    // Metadata
+    completedBy: "",
+    completedAt: "",
+  });
 
-  const whoStandards = [
-    {
-      category: "Before Induction of Anesthesia",
-      items: [
-        "Patient has confirmed identity, site, procedure, and consent",
-        "Site marked/not applicable",
-        "Anesthesia safety check completed",
-        "Pulse oximeter functioning",
-        "Patient has known allergy? If yes, displayed",
-        "Difficult airway/aspiration risk? If yes, equipment available"
-      ]
-    },
-    {
-      category: "Before Skin Incision",
-      items: [
-        "Team members introduce themselves by name and role",
-        "Surgeon, anesthesia professional, and nurse confirm patient identity, site, and procedure",
-        "Surgeon reviews critical steps, operative duration, anticipated blood loss",
-        "Anesthesia team reviews concerns for patient",
-        "Nursing team reviews sterility, equipment issues",
-        "Antibiotic prophylaxis given within 60 minutes? If yes, confirmed"
-      ]
-    },
-    {
-      category: "Before Patient Leaves OR",
-      items: [
-        "Nurse verbally confirms with team: procedure performed, counts correct, specimen labeled",
-        "Surgeon, anesthesia professional, and nurse review key concerns for recovery",
-        "Equipment problems addressed",
-        "All team members sign checklist"
-      ]
-    }
-  ];
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const handleCompleteChecklist = (patientId: string) => {
-    toast({
-      title: "Pre-operative checklist completed",
-      description: `WHO safety checklist for patient ${patientId} has been completed.`,
-    });
+  const loadData = () => {
+    try {
+      // Load patients
+      const storedPatients = localStorage.getItem('cvms_patients') || localStorage.getItem('cardiovascular-patients') || localStorage.getItem('patients');
+      if (storedPatients) {
+        const parsedPatients = JSON.parse(storedPatients);
+        setPatients(Array.isArray(parsedPatients) ? parsedPatients : []);
+      }
+
+      // Load surgeries to find patients with approved consent
+      const storedSurgeries = localStorage.getItem('cardiovascular-surgeries');
+      if (storedSurgeries) {
+        const parsedSurgeries = JSON.parse(storedSurgeries);
+        setSurgeries(Array.isArray(parsedSurgeries) ? parsedSurgeries : []);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setPatients([]);
+      setSurgeries([]);
+    }
   };
 
-  const handleMarkComplete = (patientId: string, checkItem: string) => {
-    toast({
-      title: "Checklist item completed",
-      description: `${checkItem} marked as completed for patient ${patientId}.`,
-    });
+  // Get patients who have approved consent for surgery
+  const getPatientsWithApprovedConsent = () => {
+    const approvedSurgeries = surgeries.filter(surgery => 
+      surgery.status === 'scheduled' || surgery.status === 'consent_approved'
+    );
+    
+    const approvedPatientIds = new Set(approvedSurgeries.map(surgery => surgery.patient_id));
+    
+    return patients.filter(patient => approvedPatientIds.has(patient.id));
   };
+
+  const handlePatientSelect = (patientId: string) => {
+    setSelectedPatient(patientId);
+    
+    // Auto-fill procedure name from approved surgery
+    const patientSurgery = surgeries.find(surgery => 
+      surgery.patient_id === patientId && (surgery.status === 'scheduled' || surgery.status === 'consent_approved')
+    );
+    
+    if (patientSurgery) {
+      setProcedureName(patientSurgery.procedure_name || '');
+    }
+  };
+
+  const handleCheckboxChange = (field: string, checked: boolean) => {
+    setChecklist(prev => ({ ...prev, [field]: checked }));
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setChecklist(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveChecklist = () => {
+    if (!selectedPatient) {
+      toast({
+        title: "Patient required",
+        description: "Please select a patient before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!procedureName) {
+      toast({
+        title: "Procedure required",
+        description: "Please enter a procedure name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const currentUser = "Current User"; // You can replace this with your auth context
+
+    const checklistData = {
+      id: `preop_${Date.now()}`,
+      patient_id: selectedPatient,
+      patient_name: patients.find(p => p.id === selectedPatient)?.first_name + ' ' + patients.find(p => p.id === selectedPatient)?.last_name,
+      procedure_name: procedureName,
+      ...checklist,
+      completedBy: currentUser,
+      completedAt: new Date().toISOString(),
+      status: 'completed',
+    };
+
+    // Save to localStorage
+    try {
+      const existingChecklists = JSON.parse(localStorage.getItem('cvms_preop_checklists') || '[]');
+      const updatedChecklists = [...existingChecklists, checklistData];
+      localStorage.setItem('cvms_preop_checklists', JSON.stringify(updatedChecklists));
+
+      // Update surgery status to indicate pre-op checklist is completed
+      const storedSurgeries = JSON.parse(localStorage.getItem('cardiovascular-surgeries') || '[]');
+      const updatedSurgeries = storedSurgeries.map((surgery: any) => {
+        if (surgery.patient_id === selectedPatient && (surgery.status === 'scheduled' || surgery.status === 'consent_approved')) {
+          return {
+            ...surgery,
+            preop_checklist_completed: true,
+            preop_checklist_date: new Date().toISOString()
+          };
+        }
+        return surgery;
+      });
+      localStorage.setItem('cardiovascular-surgeries', JSON.stringify(updatedSurgeries));
+
+      toast({
+        title: "Pre-operative checklist saved",
+        description: `Checklist for ${patients.find(p => p.id === selectedPatient)?.first_name} has been saved successfully.`,
+      });
+
+      // Reset form
+      setSelectedPatient("");
+      setProcedureName("");
+      setChecklist({
+        patientIdentityConfirmed: false,
+        consentSigned: false,
+        sitemarked: false,
+        anesthesiaMachineChecked: false,
+        oxygenAvailable: false,
+        suction: false,
+        knownAllergy: "",
+        difficultAirway: "",
+        aspirationRisk: "",
+        bloodLossRisk: "",
+        sterileIndicatorsConfirmed: false,
+        equipmentIssues: "",
+        implantAvailable: "",
+        antibioticProphylaxis: "",
+        imagingDisplayed: "",
+        criticalSteps: "",
+        anticipatedDuration: "",
+        nurseConfirmed: false,
+        anesthetistConfirmed: false,
+        surgeonConfirmed: false,
+        additionalConcerns: "",
+        completedBy: "",
+        completedAt: "",
+      });
+
+    } catch (error) {
+      console.error('Error saving checklist:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save checklist. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const allCriticalChecksCompleted = 
+    checklist.patientIdentityConfirmed &&
+    checklist.consentSigned &&
+    checklist.sitemarked &&
+    checklist.anesthesiaMachineChecked &&
+    checklist.sterileIndicatorsConfirmed &&
+    checklist.nurseConfirmed &&
+    checklist.anesthetistConfirmed &&
+    checklist.surgeonConfirmed;
+
+  const patientsWithApprovedConsent = getPatientsWithApprovedConsent();
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground">Pre-operative Procedures</h1>
+        <h1 className="text-3xl font-bold text-foreground">Pre-Operative Checklist</h1>
         <p className="text-muted-foreground">
-          WHO surgical safety checklist and pre-operative compliance
+          WHO Surgical Safety Checklist - Before Induction of Anesthesia (Sign In)
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="checklist">
-            Patient Checklists ({patients.length})
-          </TabsTrigger>
-          <TabsTrigger value="standards">WHO Standards</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance Reports</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="checklist" className="space-y-6">
-          <div className="grid gap-6">
-            {patients.map((patient) => (
-              <Card key={patient.id} className="bg-gradient-card shadow-card">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-medical rounded-full flex items-center justify-center">
-                        <CheckSquare className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl">{patient.name}</CardTitle>
-                        <CardDescription>
-                          {patient.surgeryType} • {patient.surgeryDate} at {patient.surgeryTime}
-                        </CardDescription>
-                      </div>
-                    </div>
-                    <div className="text-right space-y-2">
-                      <Badge 
-                        variant={patient.status === 'In Progress' ? 'default' : 'secondary'}
-                      >
-                        {patient.status}
-                      </Badge>
-                      <div className="text-sm text-muted-foreground">
-                        Surgeon: {patient.surgeon}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Progress Overview */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-semibold">WHO Checklist Progress</h3>
-                      <span className="text-sm font-medium">{patient.checklistProgress}% Complete</span>
-                    </div>
-                    <Progress value={patient.checklistProgress} className="h-3" />
-                  </div>
-
-                  <Separator />
-
-                  {/* WHO Checklist Items */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-primary" />
-                      <h3 className="font-semibold">WHO Surgical Safety Checklist</h3>
-                    </div>
-                    
-                    <div className="grid gap-4">
-                      {Object.entries(patient.whoChecklist).map(([item, details]) => (
-                        <div key={item} className="flex items-center justify-between p-4 bg-background rounded-lg border">
-                          <div className="flex items-start space-x-3">
-                            <Checkbox 
-                              checked={details.completed}
-                              onChange={() => handleMarkComplete(patient.id, item)}
-                            />
-                            <div>
-                              <Label className="font-medium">{item}</Label>
-                              {details.completed && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Verified by: {details.verifiedBy} at {details.time}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {details.completed ? (
-                              <Badge variant="default" className="text-xs">
-                                Complete
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs">
-                                Pending
-                              </Badge>
+      {/* Patient Selection */}
+      <Card className="bg-gradient-card shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" />
+            Patient & Procedure Information
+          </CardTitle>
+          <CardDescription>
+            Select patient with approved consent and enter procedure details
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="patient">Patient *</Label>
+              <Select value={selectedPatient} onValueChange={handlePatientSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select patient with approved consent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {patientsWithApprovedConsent.length === 0 ? (
+                    <SelectItem value="no-patients" disabled>
+                      No patients with approved consent found
+                    </SelectItem>
+                  ) : (
+                    patientsWithApprovedConsent.map((patient) => {
+                      const patientSurgery = surgeries.find(surgery => 
+                        surgery.patient_id === patient.id && (surgery.status === 'scheduled' || surgery.status === 'consent_approved')
+                      );
+                      return (
+                        <SelectItem key={patient.id} value={patient.id}>
+                          <div className="flex flex-col">
+                            <span>{patient.first_name} {patient.last_name} - {patient.patient_id}</span>
+                            {patientSurgery && (
+                              <span className="text-xs text-muted-foreground">
+                                Procedure: {patientSurgery.procedure_name}
+                              </span>
                             )}
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Additional Checks */}
-                  <div className="space-y-4">
-                    <h3 className="font-semibold">Additional Pre-operative Checks</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <Checkbox checked />
-                          <Label className="text-sm">Consent form signed and verified</Label>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Checkbox checked />
-                          <Label className="text-sm">NPO status confirmed (8+ hours)</Label>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Checkbox checked />
-                          <Label className="text-sm">Pre-operative medications administered</Label>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <Checkbox />
-                          <Label className="text-sm">IV access established</Label>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Checkbox />
-                          <Label className="text-sm">Laboratory results reviewed</Label>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Checkbox />
-                          <Label className="text-sm">Imaging studies available</Label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4 border-t">
-                    <Button 
-                      className="bg-gradient-medical text-white"
-                      onClick={() => handleCompleteChecklist(patient.id)}
-                      disabled={patient.checklistProgress < 100}
-                    >
-                      <CheckSquare className="w-4 h-4 mr-2" />
-                      Complete Checklist
-                    </Button>
-                    <Button variant="outline">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Print Checklist
-                    </Button>
-                    <Button variant="ghost">
-                      <AlertTriangle className="w-4 h-4 mr-2" />
-                      Report Issue
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="standards" className="space-y-6">
-          <Card className="bg-gradient-card shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" />
-                WHO Surgical Safety Standards
-              </CardTitle>
-              <CardDescription>
-                World Health Organization surgical safety checklist guidelines
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {whoStandards.map((section, index) => (
-                <div key={index} className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-primary" />
-                    <h3 className="font-semibold text-lg">{section.category}</h3>
-                  </div>
-                  <div className="bg-muted/50 p-4 rounded-lg">
-                    <div className="space-y-2">
-                      {section.items.map((item, itemIndex) => (
-                        <div key={itemIndex} className="flex items-start space-x-3">
-                          <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                          <p className="text-sm text-foreground">{item}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {index < whoStandards.length - 1 && <Separator />}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="compliance" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-gradient-card shadow-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Compliance Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">100%</div>
+                        </SelectItem>
+                      );
+                    })
+                  )}
+                </SelectContent>
+              </Select>
+              {patientsWithApprovedConsent.length === 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  WHO checklist completion
+                  No patients with approved consent found. Patients must approve consent in the Consent Management section first.
                 </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-card shadow-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Average Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">12 min</div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Checklist completion time
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-card shadow-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Safety Score</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">A+</div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Department safety rating
-                </p>
-              </CardContent>
-            </Card>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="procedure">Procedure Name *</Label>
+              <Input
+                id="procedure"
+                placeholder="e.g., Coronary Artery Bypass Graft"
+                value={procedureName}
+                onChange={(e) => setProcedureName(e.target.value)}
+              />
+            </div>
           </div>
 
-          <Card className="bg-gradient-card shadow-card">
-            <CardHeader>
-              <CardTitle>Monthly Compliance Report</CardTitle>
-              <CardDescription>
-                Detailed compliance metrics and trends
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center text-muted-foreground py-8">
-                Compliance report will be displayed here
+          {selectedPatient && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center gap-2 text-green-800">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Patient has approved consent for surgery</span>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-gradient-card shadow-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Total Procedures</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">847</div>
-                <p className="text-xs text-muted-foreground mt-1">This year</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-card shadow-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Checklist Adherence</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">99.8%</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <span className="text-success">+0.2%</span> vs last month
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-card shadow-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Time Savings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">15%</div>
-                <p className="text-xs text-muted-foreground mt-1">Reduced delays</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-card shadow-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Safety Incidents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">0</div>
-                <p className="text-xs text-muted-foreground mt-1">This month</p>
-              </CardContent>
-            </Card>
+      {/* WHO Checklist - Sign In Phase */}
+      <Card className="bg-gradient-card shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardCheck className="w-5 h-5 text-primary" />
+            Sign In - Before Induction of Anesthesia
+          </CardTitle>
+          <CardDescription>
+            Complete all checks before proceeding with anesthesia
+          </CardDescription>
+          {allCriticalChecksCompleted && (
+            <Badge className="bg-green-500 text-white w-fit">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              All Critical Checks Complete
+            </Badge>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Section 1: Patient Identity */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <span className="text-primary font-bold">1</span>
+              </div>
+              Patient Identity Confirmation
+            </h3>
+            <div className="space-y-3 pl-10">
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="identity"
+                  checked={checklist.patientIdentityConfirmed}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('patientIdentityConfirmed', checked as boolean)
+                  }
+                />
+                <Label htmlFor="identity" className="text-sm font-normal cursor-pointer">
+                  Patient has confirmed identity, site, procedure, and consent *
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="consent"
+                  checked={checklist.consentSigned}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('consentSigned', checked as boolean)
+                  }
+                />
+                <Label htmlFor="consent" className="text-sm font-normal cursor-pointer">
+                  Consent form signed and documented *
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="sitemarked"
+                  checked={checklist.sitemarked}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('sitemarked', checked as boolean)
+                  }
+                />
+                <Label htmlFor="sitemarked" className="text-sm font-normal cursor-pointer">
+                  Site marked / Not applicable *
+                </Label>
+              </div>
+            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+
+          <Separator />
+
+          {/* Section 2: Anesthesia Safety */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <span className="text-primary font-bold">2</span>
+              </div>
+              Anesthesia Safety Check
+            </h3>
+            <div className="space-y-3 pl-10">
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="anesthesia-machine"
+                  checked={checklist.anesthesiaMachineChecked}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('anesthesiaMachineChecked', checked as boolean)
+                  }
+                />
+                <Label htmlFor="anesthesia-machine" className="text-sm font-normal cursor-pointer">
+                  Anesthesia machine and medication check complete *
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="oxygen"
+                  checked={checklist.oxygenAvailable}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('oxygenAvailable', checked as boolean)
+                  }
+                />
+                <Label htmlFor="oxygen" className="text-sm font-normal cursor-pointer">
+                  Pulse oximeter on patient and functioning
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="suction"
+                  checked={checklist.suction}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('suction', checked as boolean)
+                  }
+                />
+                <Label htmlFor="suction" className="text-sm font-normal cursor-pointer">
+                  Suction available and functioning
+                </Label>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Section 3: Patient Risk Assessment */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <span className="text-primary font-bold">3</span>
+              </div>
+              Patient-Specific Risk Assessment
+            </h3>
+            <div className="space-y-4 pl-10">
+              <div className="space-y-2">
+                <Label htmlFor="allergy">Known Allergy?</Label>
+                <Select 
+                  value={checklist.knownAllergy} 
+                  onValueChange={(value) => handleInputChange('knownAllergy', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="yes">Yes - Documented</SelectItem>
+                    <SelectItem value="unknown">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="airway">Difficult Airway / Aspiration Risk?</Label>
+                <Select 
+                  value={checklist.difficultAirway} 
+                  onValueChange={(value) => handleInputChange('difficultAirway', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="yes">Yes - Equipment available</SelectItem>
+                    <SelectItem value="unknown">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bloodloss">Risk of Blood Loss {'>'} 500ml (7ml/kg in children)?</Label>
+                <Select 
+                  value={checklist.bloodLossRisk} 
+                  onValueChange={(value) => handleInputChange('bloodLossRisk', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="yes">Yes - IV access and fluids available</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Section 4: Equipment & Sterility */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <span className="text-primary font-bold">4</span>
+              </div>
+              Equipment and Sterility Confirmation
+            </h3>
+            <div className="space-y-4 pl-10">
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="sterile"
+                  checked={checklist.sterileIndicatorsConfirmed}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('sterileIndicatorsConfirmed', checked as boolean)
+                  }
+                />
+                <Label htmlFor="sterile" className="text-sm font-normal cursor-pointer">
+                  Sterility indicators confirmed (including chemical indicator results) *
+                </Label>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="equipment">Any Equipment Issues?</Label>
+                <Textarea
+                  id="equipment"
+                  placeholder="Describe any equipment concerns or issues..."
+                  value={checklist.equipmentIssues}
+                  onChange={(e) => handleInputChange('equipmentIssues', e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="implant">Implants / Special Equipment Available?</Label>
+                <Select 
+                  value={checklist.implantAvailable} 
+                  onValueChange={(value) => handleInputChange('implantAvailable', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_applicable">Not Applicable</SelectItem>
+                    <SelectItem value="yes">Yes - Available and verified</SelectItem>
+                    <SelectItem value="issue">Issue - See notes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Section 5: Additional Pre-op Requirements */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <span className="text-primary font-bold">5</span>
+              </div>
+              Additional Pre-operative Requirements
+            </h3>
+            <div className="space-y-4 pl-10">
+              <div className="space-y-2">
+                <Label htmlFor="antibiotic">Antibiotic Prophylaxis Given (Within 60 min)?</Label>
+                <Select 
+                  value={checklist.antibioticProphylaxis} 
+                  onValueChange={(value) => handleInputChange('antibioticProphylaxis', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="not_applicable">Not Applicable</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="imaging">Essential Imaging Displayed?</Label>
+                <Select 
+                  value={checklist.imagingDisplayed} 
+                  onValueChange={(value) => handleInputChange('imagingDisplayed', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="not_applicable">Not Applicable</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Section 6: Team Confirmation */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <span className="text-primary font-bold">6</span>
+              </div>
+              Surgical Team Member Confirmation
+            </h3>
+            <div className="space-y-3 pl-10">
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="nurse"
+                  checked={checklist.nurseConfirmed}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('nurseConfirmed', checked as boolean)
+                  }
+                />
+                <Label htmlFor="nurse" className="text-sm font-normal cursor-pointer">
+                  Nurse verbally confirms completion of checks *
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="anesthetist"
+                  checked={checklist.anesthetistConfirmed}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('anesthetistConfirmed', checked as boolean)
+                  }
+                />
+                <Label htmlFor="anesthetist" className="text-sm font-normal cursor-pointer">
+                  Anesthetist verbally confirms completion of checks *
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="surgeon"
+                  checked={checklist.surgeonConfirmed}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange('surgeonConfirmed', checked as boolean)
+                  }
+                />
+                <Label htmlFor="surgeon" className="text-sm font-normal cursor-pointer">
+                  Surgeon verbally confirms completion of checks *
+                </Label>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Additional Concerns */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Additional Concerns or Notes</h3>
+            <Textarea
+              placeholder="Document any additional concerns, special considerations, or notes..."
+              value={checklist.additionalConcerns}
+              onChange={(e) => handleInputChange('additionalConcerns', e.target.value)}
+              rows={4}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleSaveChecklist}
+              disabled={!allCriticalChecksCompleted || !selectedPatient || !procedureName}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save & Proceed to Surgery
+            </Button>
+            <Button variant="outline">
+              <Eye className="w-4 h-4 mr-2" />
+              Preview Checklist
+            </Button>
+          </div>
+
+          {!allCriticalChecksCompleted && (
+            <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-foreground">Complete all critical checks</p>
+                <p className="text-muted-foreground">
+                  All items marked with * must be completed before proceeding to surgery.
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
