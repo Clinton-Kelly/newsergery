@@ -541,7 +541,7 @@ export default function DuringOperation() {
       if (op.id === operationId) {
         return {
           ...op,
-          status: 'completed',
+          status: 'completed' as const,
           end_time: new Date().toISOString(),
           closure_checklist: { ...closureChecklist }
         };

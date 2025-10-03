@@ -17,6 +17,7 @@ import {
   MessageCircle,
   Download
 } from "lucide-react";
+import cardioLogo from "@/assets/cardiovascular-heart-logo.png";
 
 import {
   Sidebar,
@@ -145,16 +146,16 @@ export function AppSidebar() {
         {/* Header */}
         <div className="p-6 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-medical rounded-xl flex items-center justify-center shadow-medical">
-              <Heart className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white p-1">
+              <img src={cardioLogo} alt="Cardiovascular Logo" className="w-full h-full object-contain" />
             </div>
             {!isCollapsed && (
             <div>
               <h1 className="text-lg font-bold text-sidebar-foreground font-heading">
-                Hospital Management
+                Cardiovascular Care
               </h1>
               <p className="text-xs text-sidebar-foreground/70">
-                Patient Care System
+                Patient Management
               </p>
             </div>
             )}

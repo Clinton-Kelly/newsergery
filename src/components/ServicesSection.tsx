@@ -1,61 +1,72 @@
 import { Button } from '@/components/ui/button';
 import { 
   Users, 
-  BookOpen, 
-  Microscope, 
-  Building, 
+  Heart, 
+  Activity, 
+  FileText, 
   Calendar, 
-  GraduationCap 
+  Stethoscope 
 } from 'lucide-react';
+import servicesBackground from '@/assets/services-cardiovascular.jpg';
 
 export const ServicesSection = () => {
   const services = [
     {
       icon: Users,
-      title: 'The AIIKS Governing Board',
-      description: 'The AIIKS Governing Board is comprised of diversity of prominent representatives of both the private and public sectors...',
-      href: '/aiiks-governing-board/'
+      title: 'Patient Onboarding & Registration',
+      description: 'Comprehensive patient registration system with complete demographic and medical history capture for cardiovascular patients...',
+      href: '/patients'
     },
     {
-      icon: Building,
-      title: 'The Institute\'s Executive Management Council',
-      description: 'The Institute\'s Executive Management Council (EMC) includes the heads of the AIIKS Nodes...',
-      href: '/the-institutes-executive-management-council-emc/'
+      icon: Heart,
+      title: 'Vital Signs Monitoring',
+      description: 'Real-time collection and tracking of critical cardiovascular vital signs including blood pressure, heart rate, and oxygen levels...',
+      href: '/vitals'
     },
     {
-      icon: Microscope,
-      title: 'The AIIKS Scientific Committee',
-      description: 'The AIIKS Scientific Committee is responsible for the development and coordination of the Institute\'s scientific programmes...',
-      href: '/the-aiiks-scientific-committee/'
+      icon: Stethoscope,
+      title: 'Doctor Analysis & Diagnosis',
+      description: 'Advanced diagnostic tools for cardiovascular assessment, treatment planning, and surgical recommendations...',
+      href: '/analysis'
     },
     {
-      icon: BookOpen,
-      title: 'The Secretariat of the Institute',
-      description: 'The Secretariat of the Institute is based at the Hub, the DSI-NRF Centre of Excellence in Indigenous Knowledge Systems...',
-      href: '/the-secretariat-of-the-institute/'
+      icon: Activity,
+      title: 'Laboratory Tests Management',
+      description: 'Comprehensive lab test ordering and results management for cardiac biomarkers, imaging, and diagnostic procedures...',
+      href: '/lab-tests'
+    },
+    {
+      icon: FileText,
+      title: 'Surgical Care Workflow',
+      description: 'Complete surgical management from consent to post-operative care, including WHO checklists and real-time monitoring...',
+      href: '/consent'
     },
     {
       icon: Calendar,
-      title: 'IKS-based Continental and International Research and Science Engagement Events',
-      description: 'The AIIKS, through its various Nodes, within and outside Africa, takes cognizance of the fact that in order for AIKS to contribute...',
-      href: '/iks-based-continental-and-international-research-and-science-engagement-events'
-    },
-    {
-      icon: GraduationCap,
-      title: 'IKS Teaching programmes at AIIKS Nodes',
-      description: 'The AIIKS is mitigating the lack of critical mass of IKS human capital through supporting and facilitating the establishment...',
-      href: '/iks-teaching-programmes-at-aiiks-nodes/'
+      title: 'Follow-up & Data Management',
+      description: 'Patient follow-up scheduling, recovery tracking, and comprehensive data export capabilities for research and analysis...',
+      href: '/followup'
     }
   ];
 
   return (
-    <section id="services" className="py-20 bg-gradient-earth">
-      <div className="container mx-auto px-6">
+    <section id="services" className="py-20 relative overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={servicesBackground} 
+          alt="Cardiovascular Services Background" 
+          className="w-full h-full object-cover opacity-15"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/90 to-background/95" />
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
         
         <div className="text-center mb-16 animate-fade-in-up">
-          <h2 className="section-title">Our Services & Structure</h2>
+          <h2 className="section-title">Our Services & Features</h2>
           <p className="section-subtitle">
-            Comprehensive organizational structure designed to advance African Indigenous Knowledge Systems
+            Comprehensive cardiovascular patient management system designed for excellence in cardiac care
           </p>
         </div>
 

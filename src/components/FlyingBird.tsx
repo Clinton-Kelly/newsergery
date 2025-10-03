@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import flyingBird from '@/assets/flying-bird.png';
+import { Heart } from 'lucide-react';
 
 export const FlyingBird = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -38,20 +38,19 @@ export const FlyingBird = () => {
         setTimeout(() => setIsVisible(false), 1000);
       }}
     >
-      <motion.img
-        src={flyingBird}
-        alt="Flying bird"
-        className="w-16 h-16 object-contain"
+      <motion.div
         animate={{
           y: [-2, 2, -2],
-          rotate: [-2, 2, -2]
+          scale: [1, 1.05, 1]
         }}
         transition={{
           duration: 0.8,
           repeat: Infinity,
           ease: "easeInOut"
         }}
-      />
+      >
+        <Heart className="w-16 h-16 text-primary fill-primary" />
+      </motion.div>
     </motion.div>
   );
 };

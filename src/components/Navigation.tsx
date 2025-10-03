@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, ChevronDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import logoCircle from '@/assets/aiiks-logo-circle.png';
+import { Menu, X, ChevronDown, Heart } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import cardioLogo from '@/assets/cardio-logo.png';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -15,6 +15,7 @@ import {
 export const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,26 +27,9 @@ export const Navigation = () => {
 
   const navItems = [
     { name: 'Home', href: '#home' },
-    { 
-      name: 'About Us', 
-      href: '#about',
-      dropdown: [
-        { name: 'Background', href: '/background' },
-        { name: 'Rationale', href: '/rationale' },
-        { name: 'Vision & Mission', href: '/vision-mission' },
-        { name: 'Governance', href: '/governance' }
-      ]
-    },
-    { 
-      name: 'Services', 
-      href: '#services',
-      dropdown: [
-        { name: 'Geographical Coverage', href: '/geographical-coverage' },
-        { name: 'Governance Structure', href: '/governance' }
-      ]
-    },
-    { name: 'UNESCO', href: '#unesco' },
-    { name: 'Contact Us', href: '#contact' }
+    { name: 'About', href: '#about' },
+    { name: 'Services', href: '#services' },
+    { name: 'Contact', href: '#contact' }
   ];
 
   return (
@@ -54,15 +38,17 @@ export const Navigation = () => {
     }`}>
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <img 
-              src={logoCircle} 
-              alt="AIIKS Logo" 
-              className="w-12 h-12 rounded-full"
-            />
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="w-12 h-12 bg-white rounded-full p-2 flex items-center justify-center">
+              <img 
+                src={cardioLogo} 
+                alt="Cardiovascular Logo" 
+                className="w-full h-full object-contain"
+              />
+            </div>
             <div>
-              <h1 className="text-xl font-bold text-primary">AIIKS</h1>
-              <p className="text-xs text-muted-foreground">African Institute</p>
+              <h1 className="text-xl font-bold text-primary">Cardiovascular Care</h1>
+              <p className="text-xs text-muted-foreground">Patient Management Platform</p>
             </div>
           </div>
 
@@ -71,44 +57,24 @@ export const Navigation = () => {
             <NavigationMenuList>
               {navItems.map((item) => (
                 <NavigationMenuItem key={item.name}>
-                  {item.dropdown ? (
-                    <>
-                      <NavigationMenuTrigger className="text-foreground hover:text-primary bg-transparent">
-                        {item.name}
-                      </NavigationMenuTrigger>
-                      <NavigationMenuContent>
-                        <div className="w-48 p-2">
-                          {item.dropdown.map((dropdownItem) => (
-                            <NavigationMenuLink key={dropdownItem.name} asChild>
-                              <Link
-                                to={dropdownItem.href}
-                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                              >
-                                <div className="text-sm font-medium leading-none">{dropdownItem.name}</div>
-                              </Link>
-                            </NavigationMenuLink>
-                          ))}
-                        </div>
-                      </NavigationMenuContent>
-                    </>
-                  ) : (
-                    <NavigationMenuLink asChild>
-                      <a
-                        href={item.href}
-                        className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                      >
-                        {item.name}
-                      </a>
-                    </NavigationMenuLink>
-                  )}
+                  <NavigationMenuLink asChild>
+                    <a
+                      href={item.href}
+                      className="text-foreground hover:text-primary transition-colors duration-300 font-medium px-4"
+                    >
+                      {item.name}
+                    </a>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
               ))}
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* Contact Info */}
-          <div className="hidden lg:block text-right">
-            <p className="text-sm text-muted-foreground">031 260 1794</p>
+          {/* Dashboard Button */}
+          <div className="hidden lg:block">
+            <Button onClick={() => navigate('/dashboard')} className="bg-primary hover:bg-primary/90">
+              Go to Dashboard
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}

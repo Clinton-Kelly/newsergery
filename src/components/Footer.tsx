@@ -1,4 +1,4 @@
-import { Facebook, Twitter, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Twitter, Linkedin, Mail, Phone, MapPin, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export const Footer = () => {
@@ -14,16 +14,16 @@ export const Footer = () => {
           {/* Logo and Description */}
           <div className="col-span-1">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
+              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                <Heart className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-primary">AIIKS</h3>
-                <p className="text-xs text-muted-foreground">African Institute</p>
+                <h3 className="text-xl font-bold text-primary">CVMP</h3>
+                <p className="text-xs text-muted-foreground">Cardiac Care</p>
               </div>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Advancing African Indigenous Knowledge Systems for global impact and African dignity restoration.
+              Advancing cardiovascular patient care through comprehensive management and innovative healthcare solutions.
             </p>
           </div>
 
@@ -32,10 +32,10 @@ export const Footer = () => {
             <h4 className="font-semibold text-foreground mb-4">Quick Links</h4>
             <ul className="space-y-2">
               {[
-                { name: 'About Us', href: '#about' },
-                { name: 'Our Services', href: '#services' },
-                { name: 'Vision & Mission', href: '#vision-mission' },
-                { name: 'Contact Us', href: '#contact' }
+                { name: 'Dashboard', href: '/dashboard' },
+                { name: 'Patient Onboarding', href: '/patients' },
+                { name: 'Appointments', href: '/appointments' },
+                { name: 'Data Export', href: '/data-export' }
               ].map((link) => (
                 <li key={link.name}>
                   <a 
@@ -49,15 +49,15 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Programs */}
+          {/* Services */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Programs</h4>
+            <h4 className="font-semibold text-foreground mb-4">Patient Services</h4>
             <ul className="space-y-2">
               {[
-                'Research & Innovation',
-                'Human Capital Development',
-                'Community Engagement',
-                'UNESCO Category II Centre'
+                'Vital Data Collection',
+                'Lab Tests Management',
+                'Prescription System',
+                'Surgery & Post-Op Care'
               ].map((program) => (
                 <li key={program}>
                   <span className="text-muted-foreground text-sm">{program}</span>
@@ -72,15 +72,15 @@ export const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-primary" />
-                <span className="text-muted-foreground text-sm">031 260 1794</span>
+                <span className="text-muted-foreground text-sm">+1 (555) 123-4567</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-4 h-4 text-primary" />
-                <span className="text-muted-foreground text-sm">info@aiiks.org</span>
+                <span className="text-muted-foreground text-sm">info@cvmp.health</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-4 h-4 text-primary" />
-                <span className="text-muted-foreground text-sm">University of KwaZulu-Natal, South Africa</span>
+                <span className="text-muted-foreground text-sm">Cardiovascular Center, Medical District</span>
               </div>
             </div>
 
@@ -119,7 +119,7 @@ export const Footer = () => {
         <div className="border-t border-border pt-8 mt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-muted-foreground text-sm">
-              © {currentYear} African Institute in Indigenous Knowledge Systems (AIIKS). All rights reserved.
+              © {currentYear} Cardiovascular Patient Management Platform. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300 text-sm">

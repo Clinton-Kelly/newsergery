@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, Mail, MapPin, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import contactBackground from '@/assets/contact-cardiovascular.jpg';
 
 export const ContactSection = () => {
   const [formData, setFormData] = useState({
@@ -28,12 +29,22 @@ export const ContactSection = () => {
   };
 
   return (
-    <section id="contact" className="py-20 bg-gradient-earth">
-      <div className="container mx-auto px-6">
+    <section id="contact" className="py-20 relative overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={contactBackground} 
+          alt="Contact Background" 
+          className="w-full h-full object-cover opacity-10"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/95 to-background" />
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
         
         <div className="text-center mb-16 animate-fade-in-up">
           <h3 className="text-primary font-semibold text-lg mb-2">GET IN TOUCH</h3>
-          <h2 className="section-title">Send Us a Message and Learn More About Our Services</h2>
+          <h2 className="section-title">Contact Cardiovascular Care Team</h2>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
@@ -116,7 +127,7 @@ export const ContactSection = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Phone</h3>
-                    <p className="text-muted-foreground">031 260 1794</p>
+                    <p className="text-muted-foreground">+1 (555) 123-4567</p>
                   </div>
                 </div>
               </CardContent>
@@ -130,7 +141,7 @@ export const ContactSection = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Email</h3>
-                    <p className="text-muted-foreground">info@aiiks.org</p>
+                    <p className="text-muted-foreground">info@cardiovascularcare.com</p>
                   </div>
                 </div>
               </CardContent>
@@ -144,7 +155,7 @@ export const ContactSection = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Location</h3>
-                    <p className="text-muted-foreground">University of KwaZulu-Natal, South Africa</p>
+                    <p className="text-muted-foreground">Medical Center, Cardiac Care Unit</p>
                   </div>
                 </div>
               </CardContent>

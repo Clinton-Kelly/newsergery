@@ -1,73 +1,54 @@
 import { Button } from '@/components/ui/button';
-import knowledgeSystems from '@/assets/knowledge-systems.jpg';
-import researchInnovation from '@/assets/research-innovation.jpg';
-import communityEngagement from '@/assets/community-engagement.jpg';
+import aboutBackground from '@/assets/about-cardiovascular.jpg';
 
 export const AboutSection = () => {
-  const images = [
-    { src: knowledgeSystems, alt: 'African Knowledge Systems' },
-    { src: researchInnovation, alt: 'Research and Innovation' },
-    { src: communityEngagement, alt: 'Community Engagement' }
-  ];
-
   return (
-    <section id="about" className="py-20 bg-background">
-      <div className="container mx-auto px-6">
+    <section id="about" className="py-20 relative overflow-hidden">
+      {/* Background with cardiovascular image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={aboutBackground} 
+          alt="Cardiovascular Background" 
+          className="w-full h-full object-cover opacity-25"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/92 to-background/95" />
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
         
         {/* About Us Header */}
         <div className="text-center mb-16 animate-fade-in-up">
           <h3 className="text-primary font-semibold text-lg mb-2">ABOUT US</h3>
           <h2 className="section-title">
-            African Institute in Indigenous Knowledge Systems
+            Cardiovascular Patient Management Platform
           </h2>
           <p className="section-subtitle">
-            (AIIKS) is a consortium of more than 20 Higher Education Institutions-based and 
-            Autonomous Research Institutions within and outside Africa.
+            Advanced healthcare management system dedicated to comprehensive cardiovascular care,
+            integrating patient records, surgical workflows, and cardiac treatment protocols.
           </p>
-          <Button className="mt-6 bg-gradient-primary hover:shadow-elegant transition-all duration-300">
-            Read more ...
-          </Button>
-        </div>
-
-        {/* Images Grid */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          {images.map((image, index) => (
-            <div 
-              key={index}
-              className={`relative overflow-hidden rounded-xl shadow-card group animate-scale-in stagger-${index + 1}`}
-            >
-              <img 
-                src={image.src} 
-                alt={image.alt}
-                className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-            </div>
-          ))}
         </div>
 
         {/* What We Do Section */}
         <div className="text-center animate-fade-in-up">
-          <h3 className="text-primary font-semibold text-lg mb-2">WHAT WE DO</h3>
-          <h2 className="section-title mb-12">AIIKS Organogram</h2>
+          <h3 className="text-primary font-semibold text-lg mb-2">WHAT WE OFFER</h3>
+          <h2 className="section-title mb-12">Comprehensive Cardiac Care System</h2>
           
           <p className="text-lg text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            The AIIKS is systematizing African Indigenous Science, Technology and Innovation 
-            in the global knowledge economy through advancing a Theory of Change involving 
-            the following pillars:
+            Our platform provides end-to-end cardiovascular patient management through 
+            integrated digital workflows covering all aspects of cardiac care:
           </p>
 
           <div className="grid md:grid-cols-5 gap-4 mt-12">
             {[
-              'Research, Innovation and Knowledge Creation',
-              'Human Capital Development', 
-              'Community Engagement',
-              'Communication and Marketing',
-              'Sustainability'
+              'Patient Registration & Vitals',
+              'Doctor Analysis & Lab Tests', 
+              'Prescription Management',
+              'Surgical Care & Monitoring',
+              'Follow-up & Data Export'
             ].map((pillar, index) => (
               <div 
                 key={index}
-                className={`p-6 bg-card rounded-lg shadow-card hover:shadow-elegant transition-all duration-300 hover:-translate-y-2 animate-fade-in-up stagger-${index + 1}`}
+                className={`p-6 bg-card rounded-lg shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-2 animate-fade-in-up stagger-${index + 1} border border-primary/10`}
               >
                 <p className="font-semibold text-primary text-sm">{pillar}</p>
               </div>

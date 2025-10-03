@@ -2,7 +2,7 @@ import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
 import { useScrollFadeIn } from '@/hooks/useScrollFadeIn';
 import { motion } from 'framer-motion';
-import backgroundWoman from '@/assets/background-woman.png';
+import backgroundImage from '@/assets/about-cardiovascular.jpg';
 
 const Background = () => {
   const { ref: titleRef, isVisible: titleVisible } = useScrollFadeIn();
@@ -13,14 +13,15 @@ const Background = () => {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="relative pt-24 pb-16 bg-gradient-primary">
-        <div className="absolute inset-0 opacity-10">
+      <section className="relative pt-24 pb-16 bg-primary overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
           <img 
-            src={backgroundWoman} 
+            src={backgroundImage} 
             alt="Background" 
             className="w-full h-full object-cover"
           />
         </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/80 to-primary/70" />
         
         <div className="container mx-auto px-6 relative z-10">
           <motion.h1

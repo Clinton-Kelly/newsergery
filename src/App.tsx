@@ -8,7 +8,6 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { ProjectSetupDialog } from "@/components/ProjectSetupDialog";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Auth from "./pages/Auth";
-import Index from "./pages/Index";
 import Dashboard from "@/pages/Dashboard";
 import PatientOnboarding from "@/pages/PatientOnboarding";
 import VitalDataCollection from "@/pages/VitalDataCollection";
@@ -71,7 +70,7 @@ function AppContent() {
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout title="Dashboard" subtitle="Overview & Analytics"><Dashboard /></DashboardLayout></ProtectedRoute>} />
           <Route path="/patients" element={<ProtectedRoute><DashboardLayout title="Patient Onboarding" subtitle="Register new patients"><PatientOnboarding /></DashboardLayout></ProtectedRoute>} />
           <Route path="/vitals" element={<ProtectedRoute><DashboardLayout title="Vital Data Collection" subtitle="Record vital signs"><VitalDataCollection /></DashboardLayout></ProtectedRoute>} />
